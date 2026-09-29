@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Myanmar 2D / 3D Live</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Padauk & Inter -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Inter:wght@400;600;700;800&display=swap">
+
+    <style>
+        * {
+            font-family: 'Padauk', 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            touch-action: manipulation;
+        }
+        .gold-gradient {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+        }
+        .gold-text {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .card-glass {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+        }
+        .pulse-live {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-ring 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+        @keyframes pulse-ring {
+            to { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d97706;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-20 select-none">
+
+    <!-- Top Bar -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-amber-500/20 px-4 py-3 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-full gold-gradient flex items-center justify-center font-bold text-slate-900 shadow-md">
+                    2D
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight gold-text">2D / 3D LIVE</h1>
+                    <p class="text-[10px] text-slate-400">မြန်မာ့ထိပ်တန်း ဂဏန်းသတင်းစဉ်</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="network-status" class="flex items-center gap-1 text-[11px] bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                    <span id="live-indicator-dot" class="w-2 h-2 rounded-full bg-emerald-500 pulse-live"></span> <span id="live-status-text">Live</span>
+                </span>
+                <!-- Admin Approval Modal Button -->
+                <button onclick="openAdminModal()" class="p-2 text-amber-400 hover:text-amber-300 active:scale-95 transition bg-amber-500/10 rounded-lg border border-amber-500/30" title="Admin Control Panel">
+                    <i class="fa-solid fa-user-shield text-sm"></i>
+                </button>
+                <button onclick="refreshData()" class="p-2 text-slate-300 hover:text-amber-400 active:scale-95 transition">
+                    <i class="fa-solid fa-rotate-right" id="refresh-icon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Container -->
+    <main class="max-w-md mx-auto px-4 pt-4 space-y-5">
+
+        <!-- Notice Marquee -->
+        <div class="bg-amber-950/30 border border-amber-500/30 rounded-lg p-2 flex items-center gap-2 text-xs text-amber-200">
+            <i class="fa-solid fa-bullhorn text-amber-400 shrink-0"></i>
+            <marquee class="font-light">သတင်းအချက်အလက်: မနက် 09:30 (Modern/Internet)၊ 12:01 (မနက်ပိတ်)၊ 02:00 (Modern/Internet) နှင့် 04:30 (ညနေပိတ်) အချိန်များတွင် တိုက်ရိုက်ထုတ်လွှင့်ပါသည်။</marquee>
+        </div>
+
+        <!-- VIEW 1: 2D LIVE -->
+        <section id="view-live" class="tab-content space-y-4">
+
+            <!-- Big Live Display Card -->
+            <div class="card-glass rounded-2xl p-5 text-center shadow-2xl relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+                <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
+                    <span id="current-date">--/--/----</span>
+                    <span id="current-time" class="font-mono text-amber-400 font-semibold">00:00:00 AM</span>
+                </div>
+
+                <p id="live-header-status" class="text-xs text-amber-400/90 font-semibold tracking-wider">LIVE 2D RESULT</p>
+                
+                <!-- Main Live Number Display -->
+                <div class="py-3">
+                    <div id="live-2d-number" class="text-7xl font-extrabold gold-text tracking-wider my-1 drop-shadow-lg font-mono">
+                        --
+                    </div>
+                    <div class="flex justify-center items-center gap-4 text-xs text-slate-300 mt-2 font-mono">
+                        <span>SET: <strong id="live-set" class="text-white">---.--</strong></span>
+                        <span class="text-slate-600">|</span>
+                        <span>VALUE: <strong id="live-value" class="text-white">--.--</strong></span>
+                    </div>
+                </div>
+
+                <div class="mt-2 pt-3 border-t border-slate-800 flex justify-around text-center text-xs">
+                    <div>
+                        <p class="text-slate-400">နောက်ဆုံးချိန်</p>
+                        <p id="last-updated-session" class="font-semibold text-amber-300">--:-- --</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400">ဈေးကွက် အခြေအနေ</p>
+                        <p id="session-status" class="font-semibold text-emerald-400">စစ်ဆေးနေသည်...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today Session Results -->
+            <h2 class="text-sm font-bold text-slate-300 flex items-center justify-between">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-calendar-day text-amber-400"></i> ယနေ့ ထွက်ဂဏန်းများ</span>
+                <span id="market-lock-msg" class="text-[10px] text-amber-400/80 font-normal"></span>
+            </h2>
+
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Morning Session Card -->
+                <div id="morning-card" class="card-glass rounded-xl p-3 border-l-4 border-l-amber-500 space-y-2 transition-all">
+                    <div class="flex justify-between items-center text-xs text-amber-400 font-bold border-b border-slate-800 pb-1">
+                        <span>မနက်ပိုင်း (12:01 PM)</span>
+                        <i id="morning-status-icon" class="fa-solid fa-sun text-amber-400"></i>
+                    </div>
+                    <div class="text-center py-2">
+                        <span id="morning-2d" class="text-3xl font-extrabold text-white font-mono">--</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 space-y-0.5 font-mono">
+                        <div class="flex justify-between"><span>SET:</span> <span id="morning-set" class="text-slate-200">----</span></div>
+                        <div class="flex justify-between"><span>VAL:</span> <span id="morning-val" class="text-slate-200">----</span></div>
+                    </div>
+                </div>
+
+                <!-- Evening Session Card -->
+                <div id="evening-card" class="card-glass rounded-xl p-3 border-l-4 border-l-amber-600 space-y-2 transition-all">
+                    <div class="flex justify-between items-center text-xs text-amber-400 font-bold border-b border-slate-800 pb-1">
+                        <span>ညနေပိုင်း (04:30 PM)</span>
+                        <i id="evening-status-icon" class="fa-solid fa-moon text-indigo-400"></i>
+                    </div>
+                    <div class="text-center py-2">
+                        <span id="evening-2d" class="text-3xl font-extrabold text-white font-mono">--</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 space-y-0.5 font-mono">
+                        <div class="flex justify-between"><span>SET:</span> <span id="evening-set" class="text-slate-200">----</span></div>
+                        <div class="flex justify-between"><span>VAL:</span> <span id="evening-val" class="text-slate-200">----</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Modern/Internet Rates Table -->
+            <div class="card-glass rounded-xl p-4 space-y-2">
+                <h3 class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-2 flex justify-between items-center">
+                    <span><i class="fa-solid fa-chart-line text-emerald-400 mr-1"></i> ယနေ့ခွင် Modern / Internet ဂဏန်းများ</span>
+                    <span class="text-[10px] text-slate-400">SET Index</span>
+                </h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px]">မနက် Modern (09:30):</span>
+                        <span id="m-modern" class="font-mono font-bold text-amber-300">--</span>
+                    </div>
+                    <div class="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px]">မနက် Internet (09:30):</span>
+                        <span id="m-internet" class="font-mono font-bold text-amber-300">--</span>
+                    </div>
+                    <div class="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px]">ညနေ Modern (02:00):</span>
+                        <span id="e-modern" class="font-mono font-bold text-amber-300">--</span>
+                    </div>
+                    <div class="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span class="text-slate-400 block text-[10px]">ညနေ Internet (02:00):</span>
+                        <span id="e-internet" class="font-mono font-bold text-amber-300">--</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: RESULTS HISTORY (2D / 3D) -->
+        <section id="view-results" class="tab-content hidden space-y-4">
+            <!-- Selector Switch -->
+            <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button onclick="switchResultTab('2d')" id="subtab-2d-btn" class="flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 transition">2D ထွက်ပြီးရလဒ်များ</button>
+                <button onclick="switchResultTab('3d')" id="subtab-3d-btn" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 transition">3D ထွက်ပြီးရလဒ်များ</button>
+            </div>
+
+            <!-- 2D History List -->
+            <div id="subtab-2d" class="space-y-3">
+                <div class="flex justify-between items-center text-xs px-1">
+                    <span class="text-slate-400">ယခင်ရက်စွဲများ၏ 2D ရလဒ်များ</span>
+                    <span class="text-amber-400 font-bold">၂၀၂၆ လစဉ် မှတ်တမ်း</span>
+                </div>
+                <div id="history-2d-list" class="space-y-2">
+                    <!-- Dynamic rendering in JS -->
+                </div>
+            </div>
+
+            <!-- 3D History List -->
+            <div id="subtab-3d" class="space-y-3 hidden">
+                <div class="bg-gradient-to-r from-amber-950/40 to-slate-900 p-3 rounded-xl border border-amber-500/20 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-amber-300 font-bold">နောက်ဆုံးထွက် 3D ဂဏန်း</p>
+                        <p class="text-[10px] text-slate-400">၁၆ / ၀၉ / ၂၀၂၆ (3D)</p>
+                    </div>
+                    <div id="latest-3d-big" class="text-3xl font-extrabold gold-text font-mono">
+                        982
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-400 px-1">3D ထွက်ပြီးခဲ့သော လစဉ်မှတ်တမ်း (၁ ရက် နှင့် ၁၆ ရက်)</div>
+                <div id="history-3d-list" class="space-y-2">
+                    <!-- Dynamic rendering in JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: MARKET TOP & HEADINGS -->
+        <section id="view-market" class="tab-content hidden space-y-4">
+            <div class="card-glass rounded-xl p-4 space-y-3">
+                <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+                    <i class="fa-solid fa-arrow-trend-up text-amber-400 text-lg"></i>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-200">ယနေ့ ဈေးကွက် ထိပ်စည်း နှင့် ထိဂဏန်း</h2>
+                        <p class="text-[10px] text-slate-400">Thai SET Index Market Data</p>
+                    </div>
+                </div>
+
+                <!-- Hot Digits Grid -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-amber-500/20 text-center">
+                        <p class="text-xs text-slate-400">မနက်ပိုင်း ထိပ်စည်း</p>
+                        <p id="market-m-head" class="text-2xl font-bold gold-text font-mono mt-1">3 , 8 , 5</p>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-amber-500/20 text-center">
+                        <p class="text-xs text-slate-400">ညနေပိုင်း ထိပ်စည်း</p>
+                        <p id="market-e-head" class="text-2xl font-bold gold-text font-mono mt-1">1 , 6 , 9</p>
+                    </div>
+                </div>
+
+                <!-- Key Indicator Cards -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex justify-between items-center p-2.5 bg-slate-900/50 rounded-lg text-xs border border-slate-800">
+                        <span class="text-slate-300"><i class="fa-solid fa-star text-amber-400 mr-2"></i> မနက် အပိုင် ထိဂဏန်း</span>
+                        <span id="market-m-touch" class="font-bold text-amber-300 font-mono text-sm">4 - 9</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2.5 bg-slate-900/50 rounded-lg text-xs border border-slate-800">
+                        <span class="text-slate-300"><i class="fa-solid fa-star text-amber-400 mr-2"></i> ညနေ အပိုင် ထိဂဏန်း</span>
+                        <span id="market-e-touch" class="font-bold text-amber-300 font-mono text-sm">2 - 7</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2.5 bg-slate-900/50 rounded-lg text-xs border border-slate-800">
+                        <span class="text-slate-300"><i class="fa-solid fa-circle-notch text-emerald-400 mr-2"></i> တစ်ပတ်စာ ဘရိတ်</span>
+                        <span id="market-weekly-brake" class="font-bold text-emerald-400 font-mono text-sm">1 / 5 / 8</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SET Live Indicators -->
+            <div class="card-glass rounded-xl p-4 space-y-2">
+                <h3 class="text-xs font-bold text-slate-300 mb-2">ထိုင်းစတော့အင်းဒက်စ် ဈေးကွက်အချိန်များ</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between p-2 bg-slate-900/60 rounded">
+                        <span class="text-slate-400">09:30 AM (Modern)</span>
+                        <span id="set-t1" class="font-mono text-slate-200">SET ဖွင့်ချိန်</span>
+                    </div>
+                    <div class="flex justify-between p-2 bg-slate-900/60 rounded">
+                        <span class="text-slate-400">12:01 PM (Morning Close)</span>
+                        <span id="set-t2" class="font-mono text-slate-200">မနက်ပိုင်း ပိတ်ချိန်</span>
+                    </div>
+                    <div class="flex justify-between p-2 bg-slate-900/60 rounded">
+                        <span class="text-slate-400">02:00 PM (Modern)</span>
+                        <span id="set-t3" class="font-mono text-slate-200">မွန်းလွဲပိုင်း ဖွင့်ချိန်</span>
+                    </div>
+                    <div class="flex justify-between p-2 bg-slate-900/60 rounded">
+                        <span class="text-slate-400">04:30 PM (Evening Close)</span>
+                        <span id="set-t4" class="font-mono text-slate-200">ညနေပိုင်း ပိတ်ချိန်</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: DREAM DICTIONARY -->
+        <section id="view-dream" class="tab-content hidden space-y-4">
+            <div class="card-glass rounded-xl p-4 space-y-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-moon text-indigo-400 text-lg"></i>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-200">အိမ်မက် ဂဏန်း အဘိဓာန်</h2>
+                        <p class="text-[10px] text-slate-400">မိမိမက်သော အိမ်မက်ကို ရှာဖွေပြီး 2D/3D ဂဏန်းကြည့်ပါ</p>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative">
+                    <input type="text" id="dream-search" oninput="filterDreams()" placeholder="အိမ်မက်အမျိုးအစား ရှာရန် (ဥပမာ- မြွေ၊ ရေ၊ ပိုက်ဆံ)..." 
+                        class="w-full bg-slate-900 border border-slate-700 rounded-xl px-9 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500 placeholder-slate-500">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Dream List Container -->
+            <div id="dream-list" class="space-y-2">
+                <!-- JS Populated -->
+            </div>
+        </section>
+
+        <!-- VIEW 5: DAILY PREDICTION -->
+        <section id="view-predict" class="tab-content hidden space-y-4">
+            <div class="card-glass rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-lg"></i>
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-200">တစ်ရက်စာ ခန့်မှန်းချက်ဂဏန်းများ</h2>
+                            <p class="text-[10px] text-slate-400">Formula & AI ဖြင့် တွက်ချက်ထားသော ဂဏန်းများ</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-1 rounded-md font-mono">Today VIP</span>
+                </div>
+
+                <!-- VIP Predictions Box -->
+                <div class="bg-gradient-to-br from-amber-950/50 via-slate-900 to-slate-900 p-4 rounded-xl border border-amber-500/30 text-center space-y-3 shadow-lg">
+                    <div class="flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-crown text-amber-400"></i>
+                        <p class="text-xs text-amber-300 font-semibold">ယနေ့အတွက် အထူးဒီဇိုင်းပြုလုပ်ထားသော VIP အကွက်များ</p>
+                    </div>
+                    
+                    <div id="vip-numbers-container" class="flex justify-center items-center gap-2.5 py-1">
+                        <div class="w-14 h-14 bg-slate-900 border-2 border-amber-500/60 rounded-xl shadow-md flex items-center justify-center">
+                            <span id="pred-vip-1" class="text-2xl font-extrabold font-mono text-amber-400 drop-shadow">28</span>
+                        </div>
+                        <div class="w-14 h-14 bg-slate-900 border-2 border-amber-500/60 rounded-xl shadow-md flex items-center justify-center">
+                            <span id="pred-vip-2" class="text-2xl font-extrabold font-mono text-amber-400 drop-shadow">82</span>
+                        </div>
+                        <div class="w-14 h-14 bg-slate-900 border-2 border-amber-500/60 rounded-xl shadow-md flex items-center justify-center">
+                            <span id="pred-vip-3" class="text-2xl font-extrabold font-mono text-amber-400 drop-shadow">37</span>
+                        </div>
+                        <div class="w-14 h-14 bg-slate-900 border-2 border-amber-500/60 rounded-xl shadow-md flex items-center justify-center">
+                            <span id="pred-vip-4" class="text-2xl font-extrabold font-mono text-amber-400 drop-shadow">73</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center gap-2 pt-1">
+                        <button onclick="toggleVipVisibility()" id="vip-toggle-btn" class="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-eye text-xs" id="vip-eye-icon"></i>
+                            <span id="vip-toggle-text">VIP ဂဏန်းများ ပြန်ဖုံးမည် / ပြမည်</span>
+                        </button>
+                    </div>
+
+                    <p class="text-[10px] text-slate-400">မိမိကြိုက်နှစ်သက်ရာ ဂဏန်းများကို ရွေးချယ်နိုင်ပါသည်။</p>
+                </div>
+
+                <!-- Detailed Predictions Matrix -->
+                <div class="space-y-2">
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-300"><i class="fa-solid fa-fire text-orange-500 mr-2"></i> မနက်ပိုင်း အဓိကဂဏန်း:</span>
+                        <span id="pred-m-main" class="font-bold text-amber-300 font-mono text-sm">23, 28, 38, 78</span>
+                    </div>
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-300"><i class="fa-solid fa-bolt text-amber-400 mr-2"></i> ညနေပိုင်း အဓိကဂဏန်း:</span>
+                        <span id="pred-e-main" class="font-bold text-amber-300 font-mono text-sm">14, 19, 64, 69</span>
+                    </div>
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-300"><i class="fa-solid fa-shield-halved text-emerald-400 mr-2"></i> အရန် ဂဏန်းများ:</span>
+                        <span id="pred-reserves" class="font-bold text-emerald-400 font-mono text-sm">05, 50, 49, 94</span>
+                    </div>
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-300"><i class="fa-solid fa-crosshairs text-sky-400 mr-2"></i> မလွဲဧကန် အပိုင်ဂဏန်း:</span>
+                        <span id="pred-key-digit" class="font-bold text-sky-400 font-mono text-sm">8</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="p-3 rounded-lg bg-slate-900/40 border border-slate-800 text-[11px] text-slate-400 text-center">
+                ⚠️ ခန့်မှန်းချက်များသည် သင်္ချာနည်းကျ တွက်ချက်မှုများသာဖြစ်ပြီး အာမခံချက်မပါဝင်ပါ။
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ADMIN APPROVAL MODAL -->
+    <div id="admin-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-amber-500/40 rounded-2xl w-full max-w-md p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+            
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-amber-400 text-lg"></i>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-100">Admin Control Panel</h3>
+                        <p class="text-[10px] text-slate-400">ရလဒ်များ၊ ဈေးကွက် နှင့် ခန့်မှန်းချက်များ ပြင်ဆင်ရန်</p>
+                    </div>
+                </div>
+                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Security PIN Authentication Form -->
+            <div id="admin-auth-sec" class="space-y-3 py-2">
+                <p class="text-xs text-slate-300">Admin စနစ်သို့ ဝင်ရောက်ရန် လျှို့ဝှက်နံပါတ် ထည့်ပါ။</p>
+                <div class="relative">
+                    <input type="password" id="admin-pin-input" placeholder="Enter Admin PIN (Default: 1234)" 
+                           class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500 font-mono tracking-widest text-center">
+                </div>
+                <button onclick="verifyAdminPin()" class="w-full py-2.5 gold-gradient rounded-xl text-slate-950 text-xs font-bold shadow-lg active:scale-95 transition">
+                    Unlock Admin Access
+                </button>
+            </div>
+
+            <!-- Admin Entry Form -->
+            <div id="admin-form-sec" class="space-y-4 hidden">
+                
+                <!-- Section Sub-Tabs -->
+                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-[10px] overflow-x-auto gap-1">
+                    <button onclick="switchAdminTab('results')" id="adm-tab-results" class="px-2.5 py-1.5 rounded-lg font-bold bg-amber-500 text-slate-950 whitespace-nowrap transition">ရလဒ်များ</button>
+                    <button onclick="switchAdminTab('market')" id="adm-tab-market" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white whitespace-nowrap transition">ဈေးကွက်</button>
+                    <button onclick="switchAdminTab('predict')" id="adm-tab-predict" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white whitespace-nowrap transition">ခန့်မှန်းချက်</button>
+                    <button onclick="switchAdminTab('password')" id="adm-tab-password" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white whitespace-nowrap transition">PIN ချိန်းရန်</button>
+                </div>
+
+                <!-- 1. RESULTS TAB -->
+                <div id="adm-sec-results" class="space-y-3">
+                    <!-- Morning Entry -->
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs text-amber-400 font-bold">
+                            <span><i class="fa-solid fa-sun mr-1"></i> မနက်ပိုင်း (12:01 PM)</span>
+                            <span class="text-[10px] text-slate-500">Morning Session</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">2D ဂဏန်း</label>
+                                <input type="text" id="adm-m-2d" maxlength="2" placeholder="82" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-400 font-bold focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">SET Index</label>
+                                <input type="text" id="adm-m-set" placeholder="1423.82" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-slate-200 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">VALUE</label>
+                                <input type="text" id="adm-m-val" placeholder="28491.12" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-slate-200 focus:border-amber-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Modern (09:30)</label>
+                                <input type="text" id="adm-m-mod" maxlength="2" placeholder="48" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-300 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Internet (09:30)</label>
+                                <input type="text" id="adm-m-int" maxlength="2" placeholder="21" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-300 focus:border-amber-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evening Entry -->
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs text-amber-400 font-bold">
+                            <span><i class="fa-solid fa-moon mr-1"></i> ညနေပိုင်း (04:30 PM)</span>
+                            <span class="text-[10px] text-slate-500">Evening Session</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">2D ဂဏန်း</label>
+                                <input type="text" id="adm-e-2d" maxlength="2" placeholder="37" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-400 font-bold focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">SET Index</label>
+                                <input type="text" id="adm-e-set" placeholder="1425.37" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-slate-200 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">VALUE</label>
+                                <input type="text" id="adm-e-val" placeholder="31284.45" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-slate-200 focus:border-amber-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Modern (02:00)</label>
+                                <input type="text" id="adm-e-mod" maxlength="2" placeholder="93" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-300 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Internet (02:00)</label>
+                                <input type="text" id="adm-e-int" maxlength="2" placeholder="70" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-300 focus:border-amber-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. MARKET DATA TAB -->
+                <div id="adm-sec-market" class="space-y-3 hidden">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <div class="text-xs text-amber-400 font-bold border-b border-slate-800 pb-1 flex justify-between">
+                            <span><i class="fa-solid fa-chart-line mr-1"></i> ဈေးကွက် ထိပ်စည်း နှင့် ထိဂဏန်းများ</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">မနက် ထိပ်စည်း</label>
+                                <input type="text" id="adm-m-head" placeholder="3 , 8 , 5" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-300 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">ညနေ ထိပ်စည်း</label>
+                                <input type="text" id="adm-e-head" placeholder="1 , 6 , 9" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-amber-300 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">မနက် ထိဂဏန်း</label>
+                                <input type="text" id="adm-m-touch" placeholder="4 - 9" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-slate-200 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">ညနေ ထိဂဏန်း</label>
+                                <input type="text" id="adm-e-touch" placeholder="2 - 7" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-slate-200 focus:border-amber-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">တစ်ပတ်စာ ဘရိတ်</label>
+                            <input type="text" id="adm-weekly-brake" placeholder="1 / 5 / 8" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-center text-emerald-400 focus:border-amber-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. PREDICTION TAB -->
+                <div id="adm-sec-predict" class="space-y-3 hidden">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <div class="text-xs text-amber-400 font-bold border-b border-slate-800 pb-1">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> ခန့်မှန်းချက် ဂဏန်းများ ပြင်ရန်
+                        </div>
+                        <div class="grid grid-cols-4 gap-1 text-xs">
+                            <input type="text" id="adm-vip-1" placeholder="VIP1" class="bg-slate-900 border border-slate-700 rounded p-1 font-mono text-center text-amber-300">
+                            <input type="text" id="adm-vip-2" placeholder="VIP2" class="bg-slate-900 border border-slate-700 rounded p-1 font-mono text-center text-amber-300">
+                            <input type="text" id="adm-vip-3" placeholder="VIP3" class="bg-slate-900 border border-slate-700 rounded p-1 font-mono text-center text-amber-300">
+                            <input type="text" id="adm-vip-4" placeholder="VIP4" class="bg-slate-900 border border-slate-700 rounded p-1 font-mono text-center text-amber-300">
+                        </div>
+                        <div class="space-y-2 text-xs pt-1">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">မနက် အဓိက</label>
+                                <input type="text" id="adm-m-main" placeholder="23, 28, 38, 78" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-amber-300">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">ညနေ အဓိက</label>
+                                <input type="text" id="adm-e-main" placeholder="14, 19, 64, 69" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-amber-300">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">အရန် ဂဏန်းများ</label>
+                                <input type="text" id="adm-reserves" placeholder="05, 50, 49, 94" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-emerald-400">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block">မလွဲဧကန် အပိုင်</label>
+                                <input type="text" id="adm-key-digit" placeholder="8" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-sky-400">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. CHANGE PASSWORD TAB -->
+                <div id="adm-sec-password" class="space-y-3 hidden">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-3">
+                        <div class="text-xs text-amber-400 font-bold border-b border-slate-800 pb-2 flex items-center justify-between">
+                            <span><i class="fa-solid fa-key mr-1"></i> Admin PIN စကားဝှက် ပြောင်းလဲရန်</span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Old Password (မူလ စကားဝှက်)</label>
+                                <input type="password" id="adm-old-pin" placeholder="ယခင် စကားဝှက် ထည့်ပါ" class="w-full bg-slate-900 border border-slate-700 rounded p-2 font-mono text-slate-200 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">New Password (စကားဝှက် အသစ်)</label>
+                                <input type="password" id="adm-new-pin" placeholder="စကားဝက် အသစ် ထည့်ပါ" class="w-full bg-slate-900 border border-slate-700 rounded p-2 font-mono text-slate-200 focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Confirm Password (စကားဝှက် အသစ် အတည်ပြုပါ)</label>
+                                <input type="password" id="adm-confirm-pin" placeholder="စကားဝှက် အသစ် ပြန်ထည့်ပါ" class="w-full bg-slate-900 border border-slate-700 rounded p-2 font-mono text-slate-200 focus:border-amber-500">
+                            </div>
+                        </div>
+                        <button onclick="changeAdminPassword()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1.5 mt-2">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>PIN စကားဝှက် အသစ် ပြောင်းမည်</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="saveAndApproveData()" class="flex-1 py-3 gold-gradient rounded-xl text-slate-950 font-bold text-xs shadow-lg active:scale-95 transition flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-check-circle text-sm"></i>
+                        <span>အတည်ပြုမည် (Save & Publish All)</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bottom Mobile Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-amber-500/20 py-2">
+        <div class="max-w-md mx-auto grid grid-cols-5 text-center text-[10px]">
+            <button onclick="switchTab('live')" id="nav-live" class="nav-btn flex flex-col items-center gap-1 text-amber-400">
+                <i class="fa-solid fa-tower-broadcast text-base"></i>
+                <span>2D Live</span>
+            </button>
+            <button onclick="switchTab('results')" id="nav-results" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+                <i class="fa-solid fa-list-ol text-base"></i>
+                <span>ထွက်ပြီးရလဒ်</span>
+            </button>
+            <button onclick="switchTab('market')" id="nav-market" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+                <i class="fa-solid fa-chart-line text-base"></i>
+                <span>ဈေးကွက်</span>
+            </button>
+            <button onclick="switchTab('dream')" id="nav-dream" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+                <i class="fa-solid fa-cloud-moon text-base"></i>
+                <span>အိမ်မက်</span>
+            </button>
+            <button onclick="switchTab('predict')" id="nav-predict" class="nav-btn flex flex-col items-center gap-1 text-slate-400">
+                <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                <span>ခန့်မှန်းချက်</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Custom Toast Notification -->
+    <div id="toast" class="fixed bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 text-amber-300 border border-amber-500/40 px-4 py-2 rounded-full text-xs shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-msg">အချက်အလက်များကို အသစ်ပြင်ဆင်ပြီးပါပြီ</span>
+    </div>
+
+    <script>
+        // Data Store
+        const dreamData = [
+            { title: "မြွေ (Snake)", my: "မြွေတွေ့ခြင်း၊ မြွေကိုက်ခြင်း", number2d: "45, 95", number3d: "645" },
+            { title: "ရေ (Water)", my: "ရေကူးခြင်း၊ ရေကြီးခြင်း၊ ရေချိုးခြင်း", number2d: "18, 81", number3d: "218" },
+            { title: "ပိုက်ဆံ (Money)", my: "ငွေရခြင်း၊ ပိုက်ဆံကောက်ရခြင်း", number2d: "38, 83", number3d: "938" },
+            { title: "ကား (Car)", my: "ကားစီးခြင်း၊ ကားတိုက်ခြင်း၊ ကားဝယ်ခြင်း", number2d: "24, 42", number3d: "524" },
+            { title: "အိမ် (House)", my: "အိမ်သစ်ဆောက်ခြင်း၊ အိမ်ပြောင်းခြင်း", number2d: "14, 41", number3d: "814" },
+            { title: "သေသူ (Dead Person)", my: "လူသေမြင်ခြင်း၊ အလောင်းတွေ့ခြင်း", number2d: "04, 40", number3d: "104" },
+            { title: "ငါး (Fish)", my: "ငါးဖမ်းခြင်း၊ ငါးဟင်းချက်ခြင်း", number2d: "79, 97", number3d: "379" },
+            { title: "ဘုန်းကြီး (Monk)", my: "ဘုန်းကြီးတွေ့ခြင်း၊ ကန်တော့ခြင်း", number2d: "09, 90", number3d: "509" },
+            { title: "မီး (Fire)", my: "မီးလောင်ခြင်း၊ မီးတောက်မြင်ခြင်း", number2d: "27, 72", number3d: "427" },
+            { title: "ခွေး (Dog)", my: "ခွေးကိုက်ခြင်း၊ ခွေးဟောက်ခြင်း", number2d: "19, 91", number3d: "719" },
+            { title: "ကြက် (Chicken)", my: "ကြက်သားစားခြင်း၊ ကြက်တွန်ခြင်း", number2d: "36, 63", number3d: "836" },
+            { title: "ရွှေ (Gold)", my: "ရွှေရခြင်း၊ ရွှေဝတ်ထားခြင်း", number2d: "58, 85", number3d: "958" }
+        ];
+
+        const history2DData = [
+            { date: "29/09/2026", morning: "82", morningSet: "1423.82", morningVal: "28491.12", evening: "37", eveningSet: "1425.37", eveningVal: "31284.45" },
+            { date: "28/09/2026", morning: "49", morningSet: "1418.49", morningVal: "21045.30", evening: "05", eveningSet: "1420.05", eveningVal: "26489.20" },
+            { date: "25/09/2026", morning: "16", morningSet: "1415.16", morningVal: "19820.40", evening: "92", eveningSet: "1417.92", eveningVal: "24910.15" },
+            { date: "24/09/2026", morning: "53", morningSet: "1410.53", morningVal: "18204.80", evening: "78", eveningSet: "1412.78", eveningVal: "22340.90" },
+            { date: "23/09/2026", morning: "01", morningSet: "1408.01", morningVal: "17492.30", evening: "64", eveningSet: "1409.64", eveningVal: "20182.50" }
+        ];
+
+        const history3DData = [
+            { date: "16/09/2026", number: "982" },
+            { date: "01/09/2026", number: "451" },
+            { date: "16/08/2026", number: "730" },
+            { date: "01/08/2026", number: "219" },
+            { date: "16/07/2026", number: "804" },
+            { date: "01/07/2026", number: "625" }
+        ];
+
+        // Market Session State Management
+        let isMarketLiveActive = false;
+        let currentAdminPin = "1234";
+
+        const sessionResults = {
+            morning2D: '82',
+            morningSet: '1423.82',
+            morningVal: '28491.12',
+            morningModern: '48',
+            morningInternet: '21',
+
+            evening2D: '37',
+            eveningSet: '1425.37',
+            eveningVal: '31284.45',
+            eveningModern: '93',
+            eveningInternet: '70'
+        };
+
+        const marketData = {
+            morningHead: '3 , 8 , 5',
+            eveningHead: '1 , 6 , 9',
+            morningTouch: '4 - 9',
+            eveningTouch: '2 - 7',
+            weeklyBrake: '1 / 5 / 8'
+        };
+
+        const predictionData = {
+            vip1: '28',
+            vip2: '82',
+            vip3: '37',
+            vip4: '73',
+            morningMain: '23, 28, 38, 78',
+            eveningMain: '14, 19, 64, 69',
+            reserves: '05, 50, 49, 94',
+            keyDigit: '8'
+        };
+
+        function switchAdminTab(tab) {
+            ['results', 'market', 'predict', 'password'].forEach(t => {
+                const sec = document.getElementById(`adm-sec-${t}`);
+                const btn = document.getElementById(`adm-tab-${t}`);
+                if (sec) sec.classList.add('hidden');
+                if (btn) btn.className = "px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white whitespace-nowrap transition";
+            });
+            const activeSec = document.getElementById(`adm-sec-${tab}`);
+            const activeBtn = document.getElementById(`adm-tab-${tab}`);
+            if (activeSec) activeSec.classList.remove('hidden');
+            if (activeBtn) activeBtn.className = "px-2.5 py-1.5 rounded-lg font-bold bg-amber-500 text-slate-950 whitespace-nowrap transition";
+        }
+
+        function openAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+            document.getElementById('adm-m-2d').value = sessionResults.morning2D;
+            document.getElementById('adm-m-set').value = sessionResults.morningSet;
+            document.getElementById('adm-m-val').value = sessionResults.morningVal;
+            document.getElementById('adm-m-mod').value = sessionResults.morningModern;
+            document.getElementById('adm-m-int').value = sessionResults.morningInternet;
+
+            document.getElementById('adm-e-2d').value = sessionResults.evening2D;
+            document.getElementById('adm-e-set').value = sessionResults.eveningSet;
+            document.getElementById('adm-e-val').value = sessionResults.eveningVal;
+            document.getElementById('adm-e-mod').value = sessionResults.eveningModern;
+            document.getElementById('adm-e-int').value = sessionResults.eveningInternet;
+
+            document.getElementById('adm-m-head').value = marketData.morningHead;
+            document.getElementById('adm-e-head').value = marketData.eveningHead;
+            document.getElementById('adm-m-touch').value = marketData.morningTouch;
+            document.getElementById('adm-e-touch').value = marketData.eveningTouch;
+            document.getElementById('adm-weekly-brake').value = marketData.weeklyBrake;
+
+            document.getElementById('adm-vip-1').value = predictionData.vip1;
+            document.getElementById('adm-vip-2').value = predictionData.vip2;
+            document.getElementById('adm-vip-3').value = predictionData.vip3;
+            document.getElementById('adm-vip-4').value = predictionData.vip4;
+            document.getElementById('adm-m-main').value = predictionData.morningMain;
+            document.getElementById('adm-e-main').value = predictionData.eveningMain;
+            document.getElementById('adm-reserves').value = predictionData.reserves;
+            document.getElementById('adm-key-digit').value = predictionData.keyDigit;
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function verifyAdminPin() {
+            const pinInput = document.getElementById('admin-pin-input').value;
+            if (pinInput === currentAdminPin) {
+                document.getElementById('admin-auth-sec').classList.add('hidden');
+                document.getElementById('admin-form-sec').classList.remove('hidden');
+                showToast("Admin PIN အမှန်ရရှိပါသည်");
+            } else {
+                showToast("⚠ Admin PIN မှားယွင်းနေပါသည်။");
+            }
+        }
+
+        function changeAdminPassword() {
+            const oldPin = document.getElementById('adm-old-pin').value;
+            const newPin = document.getElementById('adm-new-pin').value;
+            const confirmPin = document.getElementById('adm-confirm-pin').value;
+
+            if (!oldPin || !newPin || !confirmPin) {
+                showToast("⚠️ အချက်အလက်များ အားလုံး ပြည့်စုံစွာ ဖြည့်စွက်ပါ။");
+                return;
+            }
+
+            if (oldPin !== currentAdminPin) {
+                showToast("⚠️ မူလ စကားဝှက် (Old Password) မှားယွင်းနေပါသည်။");
+                return;
+            }
+
+            if (newPin !== confirmPin) {
+                showToast("⚠️ စကားဝှက် အသစ် နှစ်ခု ကိုက်ညီမှု မရှိပါ။");
+                return;
+            }
+
+            if (newPin.length < 4) {
+                showToast("⚠️ စကားဝှက် အနည်းဆုံး ၄ လုံး ရှိရပါမည်။");
+                return;
+            }
+
+            currentAdminPin = newPin;
+            document.getElementById('adm-old-pin').value = '';
+            document.getElementById('adm-new-pin').value = '';
+            document.getElementById('adm-confirm-pin').value = '';
+
+            showToast("🔑 Admin PIN စကားဝှက် အသစ် အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ!");
+        }
+
+        function saveAndApproveData() {
+            const m2d = document.getElementById('adm-m-2d').value.trim();
+            const mSet = document.getElementById('adm-m-set').value.trim();
+            const mVal = document.getElementById('adm-m-val').value.trim();
+            const mMod = document.getElementById('adm-m-mod').value.trim();
+            const mInt = document.getElementById('adm-m-int').value.trim();
+
+            const e2d = document.getElementById('adm-e-2d').value.trim();
+            const eSet = document.getElementById('adm-e-set').value.trim();
+            const eVal = document.getElementById('adm-e-val').value.trim();
+            const eMod = document.getElementById('adm-e-mod').value.trim();
+            const eInt = document.getElementById('adm-e-int').value.trim();
+
+            if (m2d) sessionResults.morning2D = m2d;
+            if (mSet) sessionResults.morningSet = mSet;
+            if (mVal) sessionResults.morningVal = mVal;
+            if (mMod) sessionResults.morningModern = mMod;
+            if (mInt) sessionResults.morningInternet = mInt;
+
+            if (e2d) sessionResults.evening2D = e2d;
+            if (eSet) sessionResults.eveningSet = eSet;
+            if (eVal) sessionResults.eveningVal = eVal;
+            if (eMod) sessionResults.eveningModern = eMod;
+            if (eInt) sessionResults.eveningInternet = eInt;
+
+            const mHead = document.getElementById('adm-m-head').value.trim();
+            const eHead = document.getElementById('adm-e-head').value.trim();
+            const mTouch = document.getElementById('adm-m-touch').value.trim();
+            const eTouch = document.getElementById('adm-e-touch').value.trim();
+            const wBrake = document.getElementById('adm-weekly-brake').value.trim();
+
+            if (mHead) marketData.morningHead = mHead;
+            if (eHead) marketData.eveningHead = eHead;
+            if (mTouch) marketData.morningTouch = mTouch;
+            if (eTouch) marketData.eveningTouch = eTouch;
+            if (wBrake) marketData.weeklyBrake = wBrake;
+
+            const v1 = document.getElementById('adm-vip-1').value.trim();
+            const v2 = document.getElementById('adm-vip-2').value.trim();
+            const v3 = document.getElementById('adm-vip-3').value.trim();
+            const v4 = document.getElementById('adm-vip-4').value.trim();
+            const mMain = document.getElementById('adm-m-main').value.trim();
+            const eMain = document.getElementById('adm-e-main').value.trim();
+            const res = document.getElementById('adm-reserves').value.trim();
+            const key = document.getElementById('adm-key-digit').value.trim();
+
+            if (v1) predictionData.vip1 = v1;
+            if (v2) predictionData.vip2 = v2;
+            if (v3) predictionData.vip3 = v3;
+            if (v4) predictionData.vip4 = v4;
+            if (mMain) predictionData.morningMain = mMain;
+            if (eMain) predictionData.eveningMain = eMain;
+            if (res) predictionData.reserves = res;
+            if (key) predictionData.keyDigit = key;
+
+            confirmMorningResult();
+            confirmEveningResult();
+            updateMarketUI();
+            updatePredictionUI();
+
+            closeAdminModal();
+            showToast("အချက်အလက်များအားလုံး အောင်မြင်စွာ ပြင်ဆင်လိုက်ပါပြီ!");
+        }
+
+        function updateMarketUI() {
+            document.getElementById('market-m-head').innerText = marketData.morningHead;
+            document.getElementById('market-e-head').innerText = marketData.eveningHead;
+            document.getElementById('market-m-touch').innerText = marketData.morningTouch;
+            document.getElementById('market-e-touch').innerText = marketData.eveningTouch;
+            document.getElementById('market-weekly-brake').innerText = marketData.weeklyBrake;
+        }
+
+        function updatePredictionUI() {
+            document.getElementById('pred-vip-1').innerText = predictionData.vip1;
+            document.getElementById('pred-vip-2').innerText = predictionData.vip2;
+            document.getElementById('pred-vip-3').innerText = predictionData.vip3;
+            document.getElementById('pred-vip-4').innerText = predictionData.vip4;
+
+            document.getElementById('pred-m-main').innerText = predictionData.morningMain;
+            document.getElementById('pred-e-main').innerText = predictionData.eveningMain;
+            document.getElementById('pred-reserves').innerText = predictionData.reserves;
+            document.getElementById('pred-key-digit').innerText = predictionData.keyDigit;
+        }
+
+        let isVipVisible = true;
+        function toggleVipVisibility() {
+            isVipVisible = !isVipVisible;
+            const ids = ['pred-vip-1', 'pred-vip-2', 'pred-vip-3', 'pred-vip-4'];
+            const eyeIcon = document.getElementById('vip-eye-icon');
+            const toggleText = document.getElementById('vip-toggle-text');
+
+            ids.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (isVipVisible) {
+                        el.innerText = [predictionData.vip1, predictionData.vip2, predictionData.vip3, predictionData.vip4][idx];
+                        el.classList.remove('blur-sm');
+                    } else {
+                        el.innerText = '??';
+                        el.classList.add('blur-sm');
+                    }
+                }
+            });
+
+            if (isVipVisible) {
+                eyeIcon.className = 'fa-solid fa-eye text-xs';
+                toggleText.innerText = 'VIP ဂဏန်းများ ပြန်ဖုံးမည်';
+            } else {
+                eyeIcon.className = 'fa-solid fa-eye-slash text-xs';
+                toggleText.innerText = 'VIP ဂဏန်းများ ကြည့်မည်';
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+
+            const dateStr = now.toLocaleDateString('en-GB');
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: true });
+
+            document.getElementById('current-date').innerText = dateStr;
+            document.getElementById('current-time').innerText = timeStr;
+
+            evaluateMarketSchedule(now);
+        }
+
+        function evaluateMarketSchedule(time) {
+            const hours = time.getHours();
+            const minutes = time.getMinutes();
+            const timeVal = hours * 100 + minutes;
+
+            const MORNING_OPEN = 930;
+            const MORNING_CLOSE = 1201;
+            const EVENING_OPEN = 1400;
+            const EVENING_CLOSE = 1630;
+
+            const dayOfWeek = time.getDay();
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+            confirmMorningResult();
+            confirmEveningResult();
+
+            if (isWeekend) {
+                isMarketLiveActive = false;
+                setLiveStatusUI(false, "ဈေးကွက် ပိတ်သည် (စနေ/တနင်္ဂနွေ)", "တနင်္လာနေ့ 09:30 AM တွင် ပြန်စမည်");
+                return;
+            }
+
+            if (timeVal < MORNING_OPEN) {
+                isMarketLiveActive = false;
+                setLiveStatusUI(false, "ဈေးကွက် မဖွင့်သေးပါ", "ယနေ့ နံနက် 09:30 AM တွင် ပြန်စမည်");
+                document.getElementById('last-updated-session').innerText = "09:30 AM စတင်မည်";
+
+            } else if (timeVal >= MORNING_OPEN && timeVal < MORNING_CLOSE) {
+                isMarketLiveActive = true;
+                setLiveStatusUI(true, "မနက်ပိုင်း ဈေးကွက်ဖွင့်သည်", "မနက်ပိုင်း LIVE ထုတ်လွှင့်နေသည်");
+                document.getElementById('last-updated-session').innerText = "12:01 PM ထွက်မည်";
+
+            } else if (timeVal >= MORNING_CLOSE && timeVal < EVENING_OPEN) {
+                isMarketLiveActive = false;
+                setLiveStatusUI(false, "မနက်ပိုင်း ပိတ်ပြီး (ဈေးကွက်နား)", "မွန်းလွဲ 02:00 PM တွင် ပြန်စမည်");
+                document.getElementById('last-updated-session').innerText = "12:01 PM (မနက်ပိုင်း)";
+
+            } else if (timeVal >= EVENING_OPEN && timeVal < EVENING_CLOSE) {
+                isMarketLiveActive = true;
+                setLiveStatusUI(true, "ညနေပိုင်း ဈေးကွက်ဖွင့်သည်", "ညနေပိုင်း LIVE ထုတ်လွှင့်နေသည်");
+                document.getElementById('last-updated-session').innerText = "04:30 PM ထွက်မည်";
+
+            } else {
+                isMarketLiveActive = false;
+                setLiveStatusUI(false, "ဈေးကွက် ပိတ်ချိန် (ယနေ့ ပိတ်ပါပြီ)", "မနက်ဖန် မနက် 09:30 AM မှ ပြန်စမည်");
+                document.getElementById('last-updated-session').innerText = "04:30 PM (ညနေပိုင်း)";
+            }
+        }
+
+        function setLiveStatusUI(isLive, statusText, headerText) {
+            const sessionStatusEl = document.getElementById('session-status');
+            const liveStatusTextEl = document.getElementById('live-status-text');
+            const liveDotEl = document.getElementById('live-indicator-dot');
+            const liveHeaderEl = document.getElementById('live-header-status');
+
+            sessionStatusEl.innerText = statusText;
+            liveHeaderEl.innerText = headerText;
+
+            if (isLive) {
+                sessionStatusEl.className = "font-semibold text-emerald-400";
+                liveStatusTextEl.innerText = "LIVE";
+                liveDotEl.className = "w-2 h-2 rounded-full bg-emerald-500 pulse-live";
+            } else {
+                sessionStatusEl.className = "font-semibold text-rose-400";
+                liveStatusTextEl.innerText = "CLOSED";
+                liveDotEl.className = "w-2 h-2 rounded-full bg-rose-500";
+            }
+        }
+
+        function confirmMorningResult() {
+            document.getElementById('morning-2d').innerText = sessionResults.morning2D;
+            document.getElementById('morning-set').innerText = sessionResults.morningSet;
+            document.getElementById('morning-val').innerText = sessionResults.morningVal;
+            document.getElementById('m-modern').innerText = sessionResults.morningModern;
+            document.getElementById('m-internet').innerText = sessionResults.morningInternet;
+        }
+
+        function confirmEveningResult() {
+            document.getElementById('evening-2d').innerText = sessionResults.evening2D;
+            document.getElementById('evening-set').innerText = sessionResults.eveningSet;
+            document.getElementById('evening-val').innerText = sessionResults.eveningVal;
+            document.getElementById('e-modern').innerText = sessionResults.eveningModern;
+            document.getElementById('e-internet').innerText = sessionResults.eveningInternet;
+        }
+
+        function simulateLive2D() {
+            if (!isMarketLiveActive) return;
+
+            const setVal = (1420 + Math.random() * 8).toFixed(2);
+            const valVal = (25000 + Math.random() * 8000).toFixed(2);
+            
+            const setLast = setVal.split('.')[0].slice(-1);
+            const valLast = valVal.split('.')[0].slice(-1);
+            const live2D = setLast + valLast;
+
+            document.getElementById('live-set').innerText = setVal;
+            document.getElementById('live-value').innerText = valVal;
+            document.getElementById('live-2d-number').innerText = live2D;
+        }
+
+        function render2DHistory() {
+            const container = document.getElementById('history-2d-list');
+            container.innerHTML = '';
+
+            history2DData.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'card-glass rounded-xl p-3 text-xs space-y-2';
+                el.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1 text-slate-400">
+                        <span class="font-bold text-slate-200"><i class="fa-regular fa-calendar-days text-amber-400 mr-1"></i> ${item.date}</span>
+                        <span class="text-[10px]">SET 2D</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-center pt-1 font-mono">
+                        <div class="bg-slate-900/80 p-2 rounded border border-slate-800/80">
+                            <span class="text-[10px] text-slate-400 block font-sans">မနက် (12:00)</span>
+                            <span class="text-xl font-bold text-amber-400">${item.morning}</span>
+                            <div class="text-[9px] text-slate-500 mt-0.5">S: ${item.morningSet} | V: ${item.morningVal}</div>
+                        </div>
+                        <div class="bg-slate-900/80 p-2 rounded border border-slate-800/80">
+                            <span class="text-[10px] text-slate-400 block font-sans">ညနေ (04:30)</span>
+                            <span class="text-xl font-bold text-amber-400">${item.evening}</span>
+                            <div class="text-[9px] text-slate-500 mt-0.5">S: ${item.eveningSet} | V: ${item.eveningVal}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function render3DHistory() {
+            const container = document.getElementById('history-3d-list');
+            container.innerHTML = '';
+
+            history3DData.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'card-glass rounded-xl p-3 flex justify-between items-center text-xs';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg gold-gradient flex items-center justify-center font-bold text-slate-950 font-mono text-sm shadow">
+                            3D
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-200">${item.date}</p>
+                            <p class="text-[10px] text-slate-400">ထိုင်းထီ ၃ လုံးရလဒ်</p>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-extrabold gold-text font-mono tracking-widest">
+                        ${item.number}
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function renderDreams(items = dreamData) {
+            const container = document.getElementById('dream-list');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-xs text-slate-500">ရှာဖွေမှု အချက်အလက် မရှိပါ။</div>`;
+                return;
+            }
+
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'card-glass rounded-xl p-3 flex justify-between items-center';
+                el.innerHTML = `
+                    <div class="space-y-0.5 pr-2">
+                        <h4 class="text-xs font-bold text-slate-200">${item.title}</h4>
+                        <p class="text-[11px] text-slate-400">${item.my}</p>
+                    </div>
+                    <div class="text-right shrink-0 font-mono">
+                        <div class="text-xs font-bold text-amber-400">2D: <span class="text-white">${item.number2d}</span></div>
+                        <div class="text-[10px] text-emerald-400">3D: <span class="text-slate-300">${item.number3d}</span></div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function filterDreams() {
+            const query = document.getElementById('dream-search').value.toLowerCase().trim();
+            const filtered = dreamData.filter(d => 
+                d.title.toLowerCase().includes(query) || 
+                d.my.toLowerCase().includes(query) ||
+                d.number2d.includes(query) ||
+                d.number3d.includes(query)
+            );
+            renderDreams(filtered);
+        }
+
+        function populateTodayStatic() {
+            confirmMorningResult();
+            confirmEveningResult();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(view => {
+                view.classList.add('hidden');
+            });
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-amber-400');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-amber-400');
+            }
+        }
+
+        function switchResultTab(type) {
+            const btn2d = document.getElementById('subtab-2d-btn');
+            const btn3d = document.getElementById('subtab-3d-btn');
+            const sec2d = document.getElementById('subtab-2d');
+            const sec3d = document.getElementById('subtab-3d');
+
+            if (type === '2d') {
+                btn2d.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 transition";
+                btn3d.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 transition";
+                sec2d.classList.remove('hidden');
+                sec3d.classList.add('hidden');
+            } else {
+                btn3d.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 transition";
+                btn2d.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 transition";
+                sec3d.classList.remove('hidden');
+                sec2d.classList.add('hidden');
+            }
+        }
+
+        function refreshData() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('fa-spin');
+            
+            simulateLive2D();
+            
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+                showToast("အချက်အလက်များကို ရယူပြီးပါပြီ");
+            }, 800);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        setInterval(updateClock, 1000);
+        setInterval(simulateLive2D, 3000);
+
+        window.onload = function() {
+            render2DHistory();
+            render3DHistory();
+            renderDreams();
+            populateTodayStatic();
+            updateMarketUI();
+            updatePredictionUI();
+            updateClock();
+        };
+    </script>
+</body>
+</html>
